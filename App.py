@@ -24,21 +24,21 @@ books_df = load_data()
 class UserSegmentLayer:
     def __init__(self):
         self.questions = [
-            "How often do you read? (1-5): ",
-            "Interest in Fiction (1-5): ",
-            "Interest in Non-Fiction (1-5): ",
-            "Interest in Mystery (1-5): ",
-            "Interest in Sci-Fi (1-5): ",
-            "Interest in Fantasy (1-5): ",
-            "Importance of Book Length (1-5): ",
-            "Importance of Ratings (1-5): ",
-            "Prefer English Books? (1-5): ",
-            "Importance of Author Reputation (1-5): ",
-            "Prefer Recent Books or Classics? (1-5, 1=Classics, 5=Recent): ",
-            "Importance of Publication Year (1-5): ",
-            "Interest in Foreign Language Books (1-5): ",
-            "Importance of Reviews (1-5): ",
-            "Prefer Physical Books or E-books? (1-5, 1=E-books, 5=Physical): "
+            "How often do you read books? (1-5): ",
+            "Rate your interest in fiction books (1-5): ",
+            "Rate your interest in non-fiction books (1-5): ",
+            "Rate your interest in mystery books (1-5): ",
+            "Rate your interest in science fiction books (1-5): ",
+            "Rate your interest in fantasy books (1-5): ",
+            "How important is the book's length to you? (1-5): ",
+            "How much do you care about book ratings? (1-5): ",
+            "Do you prefer books in English? (1-5): ",
+            "How important is the author's reputation to you? (1-5): ",
+            "Do you prefer recent books or classics? (1-5, 1 for classics, 5 for recent): ",
+            "How much do you care about the book's publication year? (1-5): ",
+            "Rate your interest in foreign language books (1-5): ",
+            "How important are book reviews to you? (1-5): ",
+            "Do you prefer reading physical books or e-books? (1-5, 1 for e-books, 5 for physical books): "
         ]
         self.scaler = StandardScaler()
 
@@ -133,11 +133,10 @@ class RecommendationLayer:
         test_mse = mean_squared_error(self.y_test, y_test_pred)
         test_r2 = r2_score(self.y_test, y_test_pred)
 
-        # Store metrics in session state
-        st.session_state.train_mse = train_mse
-        st.session_state.train_r2 = train_r2
-        st.session_state.test_mse = test_mse
-        st.session_state.test_r2 = test_r2
+        st.write(f"Training MSE: {train_mse:.4f}")
+        st.write(f"Training R^2 score: {train_r2:.4f}")
+        st.write(f"Testing MSE: {test_mse:.4f}")
+        st.write(f"Testing R^2 score: {test_r2:.4f}")
 
     def get_user_segment(self, user_id):
         with open(f'user_data/{user_id}.pkl', 'rb') as f:
@@ -179,40 +178,35 @@ class RecommendationLayer:
 
 # Streamlit app
 def main():
-    st.set_page_config(page_title="Book Recommendation System", layout="wide")
+    st.title("Book Recommendation System")
 
-    st.title("📚 Book Recommendation System")
+    # Display dataset overview
+    st.header("Dataset Overview")
+    st.subheader("First few rows of the dataset:")
+    st.dataframe(books_df.head())
 
-    # Sidebar for user input
-    with st.sidebar:
-        st.header("User Preferences")
-        user_segment_layer = UserSegmentLayer()
-        user_id = user_segment_layer.process_user()
+    st.subheader("Last rows of the dataset:")
+    st.dataframe(books_df.tail())
 
-        if st.button("Get Recommendations"):
-            st.session_state.get_recommendations = True
+    st.subheader("Columns in the dataset:")
+    st.write(books_df.columns.tolist())
 
-        st.write("---")
-        st.write("Filters:")
-        genre_filter = st.multiselect("Select Genres", ['Fiction', 'Non-Fiction', 'Mystery', 'Science Fiction', 'Fantasy'])
-        price_range = st.slider("Price Range ($)", 0, 100, (10, 50))
-        publication_year = st.slider("Publication Year", 1900, 2023, (2000, 2023))
-
-    # Instantiate recommendation layer
+    # Instantiate user segmentation and recommendation layers
+    user_segment_layer = UserSegmentLayer()
     recommendation_layer = RecommendationLayer(books_df)
 
-    # Display recommendations
-    if st.session_state.get('get_recommendations', False):
-        st.header("Top 10 Recommended Books:")
+    st.header("User Preferences")
+    user_id = user_segment_layer.process_user()
+
+    if st.button("Get Recommendations"):
+        st.write(f"User ID: {user_id}")
         recommendations = recommendation_layer.recommend_books(user_id)
+        st.header("Top 10 Recommended Books:")
         st.dataframe(recommendations)
 
-    # Display accuracy metrics under an expander
-    with st.expander("Accuracy of the Project"):
-        st.write(f"Training MSE: {st.session_state.train_mse:.4f}")
-        st.write(f"Training R² Score: {st.session_state.train_r2:.4f}")
-        st.write(f"Testing MSE: {st.session_state.test_mse:.4f}")
-        st.write(f"Testing R² Score: {st.session_state.test_r2:.4f}")
+    # Option to add another user
+    if st.button("Add Another User"):
+        st.rerun()
 
     st.write("Thank you for using the book recommendation system!")
 
